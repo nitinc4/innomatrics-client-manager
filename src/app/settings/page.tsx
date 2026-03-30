@@ -19,10 +19,6 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<Partial<ISettings>>({
     reminderEmail: "",
     remindBefore: 30,
-    smtpHost: "smtp.gmail.com",
-    smtpPort: 465,
-    smtpUser: "",
-    smtpPass: "",
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -138,66 +134,6 @@ export default function SettingsPage() {
               </div>
               <p className={styles.inputHint}>How many minutes before the callback should we alert you?</p>
             </div>
-          </div>
-        </div>
-
-        <div className={styles.settingsSection}>
-          <div className={styles.sectionHeader}>
-            <Server size={20} className={styles.sectionIcon} />
-            <h2>Email Server (SMTP)</h2>
-          </div>
-          
-          <div className={styles.inputGrid}>
-            <div className={styles.inputGroup}>
-              <label htmlFor="smtpHost">SMTP Host</label>
-              <input
-                id="smtpHost"
-                name="smtpHost"
-                type="text"
-                value={settings.smtpHost}
-                onChange={handleChange}
-                placeholder="smtp.gmail.com"
-              />
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label htmlFor="smtpPort">SMTP Port</label>
-              <input
-                id="smtpPort"
-                name="smtpPort"
-                type="number"
-                value={settings.smtpPort}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label htmlFor="smtpUser">SMTP Username</label>
-              <input
-                id="smtpUser"
-                name="smtpUser"
-                type="text"
-                value={settings.smtpUser}
-                onChange={handleChange}
-                placeholder="Your email address"
-              />
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label htmlFor="smtpPass">SMTP Password</label>
-              <input
-                id="smtpPass"
-                name="smtpPass"
-                type="password"
-                value={settings.smtpPass}
-                onChange={handleChange}
-                placeholder="••••••••••••"
-              />
-            </div>
-          </div>
-          <div className={styles.alertBox}>
-            <AlertCircle size={18} />
-            <p>For Gmail, please use an <strong>App Password</strong>. Direct passwords will not work.</p>
           </div>
         </div>
 
