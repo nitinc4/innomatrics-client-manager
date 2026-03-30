@@ -1,0 +1,215 @@
+.tableContainer {
+  width: 100%;
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  overflow: hidden;
+  margin-top: 1.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  padding: 1rem 1.5rem;
+  background: rgba(15, 23, 42, 0.3);
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.table td {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  color: #f8fafc;
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+
+.row {
+  transition: all 0.2s ease;
+}
+
+.row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.clientCell {
+  min-width: 200px;
+}
+
+.clientTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.clientNameClickable {
+  font-weight: 600;
+  color: #6366f1;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clientNameClickable:hover {
+  text-decoration: underline;
+  color: #818cf8;
+}
+
+.clientContact {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+  font-size: 0.8125rem;
+}
+
+.locationInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #94a3b8;
+}
+
+.requirementInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 300px;
+}
+
+.businessBadge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: rgba(99, 102, 241, 0.1);
+  color: #818cf8;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.requirementText {
+  color: #64748b;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.active { background: rgba(34, 197, 94, 0.1); color: #4ade80; }
+.rna { background: rgba(168, 85, 247, 0.1); color: #c084fc; }
+.callback { background: rgba(234, 179, 8, 0.1); color: #facc15; }
+.converted { background: rgba(59, 130, 246, 0.1); color: #60a5fa; }
+.lost { background: rgba(239, 68, 68, 0.1); color: #f87171; }
+.archived { background: rgba(148, 163, 184, 0.1); color: #94a3b8; }
+.defaultStatus { background: rgba(51, 65, 85, 0.2); color: #cbd5e1; }
+
+.callbackInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.assignee {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.assigneeAvatar {
+  width: 28px;
+  height: 28px;
+  background: #334155;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.actionsHeader {
+  text-align: right;
+}
+
+.actionsCell {
+  text-align: right;
+}
+
+.actionButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.actionBtnEdit, .actionBtnDiscard, .actionBtnRestore, .actionBtnDelete {
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actionBtnEdit:hover { background: rgba(99, 102, 241, 0.1); color: #818cf8; }
+.actionBtnDiscard:hover { background: rgba(239, 68, 68, 0.1); color: #f87171; }
+.actionBtnRestore:hover { background: rgba(20, 184, 166, 0.1); color: #2dd4bf; }
+.actionBtnDelete:hover { background: rgba(239, 68, 68, 0.1); color: #f87171; }
+
+.emptyState {
+  padding: 5rem 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.emptyIcon {
+  color: #334155;
+  margin-bottom: 0.5rem;
+}
+
+.emptyState h3 {
+  font-size: 1.25rem;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+.emptyState p {
+  color: #64748b;
+}
+
+@media (max-width: 1024px) {
+  .tableContainer {
+    overflow-x: auto;
+  }
+}

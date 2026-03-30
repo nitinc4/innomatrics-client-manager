@@ -1,22 +1,19 @@
 "use client"
 
 import { useState, useEffect } from "react";
-import styles from "./page.module.css";
+import styles from "../page.module.css";
 import ClientTable from "@/components/ClientTable";
 import ClientModal from "@/components/ClientModal";
 import { 
-  Plus, 
   Users, 
-  CheckCircle2, 
-  Clock, 
-  ArrowUpRight,
   Search,
   Filter,
-  Loader2
+  Loader2,
+  Plus
 } from "lucide-react";
 import { IClient } from "@/models/Client";
 
-export default function Dashboard() {
+export default function ClientsPage() {
   const [clients, setClients] = useState<IClient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -95,45 +92,18 @@ export default function Dashboard() {
     client.business?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const stats = [
-    { label: "Total Clients", value: clients.length, icon: <Users size={24} />, color: "#6366f1" },
-    { label: "Active Leads", value: clients.filter(c => c.status === "Active").length, icon: <Clock size={24} />, color: "#facc15" },
-    { label: "Converted", value: clients.filter(c => c.status === "Converted").length, icon: <CheckCircle2 size={24} />, color: "#14b8a6" },
-  ];
-
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Client Dashboard</h1>
-          <p className={styles.subtitle}>Welcome back, Super User. Manage your clients efficiently.</p>
+          <h1 className={styles.title}>All Clients</h1>
+          <p className={styles.subtitle}>Detailed view and management of all active clients.</p>
         </div>
         <button onClick={openAddModal} className={styles.addButton}>
           <Plus size={20} />
-          <span>Add New Client</span>
+          <span>Add Client</span>
         </button>
       </header>
-
-      <section className={styles.statsGrid}>
-        {stats.map((stat, idx) => (
-          <div key={idx} className={styles.statCard}>
-            <div className={styles.statIcon} style={{ backgroundColor: `${stat.color}15`, color: stat.color }}>
-              {stat.icon}
-            </div>
-            <div className={styles.statInfo}>
-              <span className={styles.statLabel}>{stat.label}</span>
-              <div className={styles.statValueContainer}>
-                <h3 className={styles.statValue}>{stat.value}</h3>
-                <span className={styles.statTrend}>
-                  <ArrowUpRight size={14} />
-                  12%
-                </span>
-              </div>
-            </div>
-            <div className={styles.statBgIcon}>{stat.icon}</div>
-          </div>
-        ))}
-      </section>
 
       <section className={styles.tableSection}>
         <div className={styles.tableHeader}>
@@ -141,17 +111,11 @@ export default function Dashboard() {
             <Search size={18} className={styles.searchIcon} />
             <input 
               type="text" 
-              placeholder="Search clients by name, phone or business..." 
+              placeholder="Filter clients..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={styles.searchInput}
             />
-          </div>
-          <div className={styles.tableActions}>
-            <button className={styles.filterBtn}>
-              <Filter size={18} />
-              <span>Filters</span>
-            </button>
           </div>
         </div>
 
@@ -174,7 +138,7 @@ export default function Dashboard() {
         onClose={() => setIsModalOpen(false)} 
         onSave={handleSaveClient}
         initialData={selectedClient}
-        title={selectedClient ? "Edit Client Details" : "Register New Client"}
+        title={selectedClient ? "Update Client" : "Register Client"}
       />
     </div>
   );
