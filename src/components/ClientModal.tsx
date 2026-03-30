@@ -2,8 +2,15 @@
 
 import { useState, useEffect } from "react";
 import styles from "./ClientModal.module.css";
-import { X, Save, Loader2, User, Phone, MapPin, Briefcase, FileText, Calendar, Users, Clock } from "lucide-react";
+import { X, Save, Loader2, User, Phone, MapPin, Briefcase, FileText, Calendar, Users, Clock, ShieldCheck, MessageSquare, Send, CalendarDays } from "lucide-react";
 import { IClient } from "@/models/Client";
+import React, { Fragment } from "react";
+import { useUser } from "@/hooks/useUser";
+
+interface UserOption {
+  username: string;
+  name: string;
+}
 
 interface ClientModalProps {
   isOpen: boolean;
@@ -11,24 +18,55 @@ interface ClientModalProps {
   onSave: (clientData: Partial<IClient>) => Promise<void>;
   initialData?: IClient | null;
   title: string;
+  viewOnly?: boolean;
 }
 
-export default function ClientModal({ isOpen, onClose, onSave, initialData, title }: ClientModalProps) {
+export default function ClientModal({ isOpen, onClose, onSave, initialData, title, viewOnly = false }: ClientModalProps) {
   const [formData, setFormData] = useState<Partial<IClient>>({
-    name: "",
-    contactNumber: "",
-    location: "",
-    business: "",
-    requirement: "",
-    description: "",
-    status: "Active",
-    reaction: "",
-    meetings: "",
-    assign: "",
-    callbackMonth: "",
     callback: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"details" | "notes">("details");
+  const [employees, setEmployees] = useState<UserOption[]>([]);
+  const [notes, setNotes] = useState<any[]>([]);
+  const [newNote, setNewNote] = useState("");
+  const [isSendingNote, setIsSendingNote] = useState(false);
+  const { user, isAdmin } = useUser();
+
+  useEffect(() => {
+    if (isOpen && isAdmin) {
+      fetch("/api/users")
+        .then(res => res.json())
+        .then(data => setEmployees(data))
+        .catch(err => console.error("Failed to fetch employees", err));
+    }
+  }, [isOpen, isAdmin]);
+
+  useEffect(() => {
+    if (isOpen && initialData?._id) {
+      fetch(`/api/clients/${initialData._id}/notes`)
+        .then(res => res.json())
+        .then(data => setNotes(data))
+        .catch(err => console.error("Failed to fetch notes", err));
+    }
+  }, [isOpen, initialData?._id]);
+
+  const groupNotesByDate = (notesToGroup: any[]) => {
+    const groups: Record<string, any[]> = {};
+    notesToGroup.forEach(note => {
+      const date = new Date(note.createdAt).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(note);
+    });
+    return groups;
+  };
+
+  const noteGroups = groupNotesByDate(notes);
 
   useEffect(() => {
     if (initialData) {
@@ -42,8 +80,6 @@ export default function ClientModal({ isOpen, onClose, onSave, initialData, titl
         requirement: "",
         description: "",
         status: "Active",
-        reaction: "",
-        meetings: "",
         assign: "",
         callbackMonth: "",
         callback: "",
@@ -71,6 +107,29 @@ export default function ClientModal({ isOpen, onClose, onSave, initialData, titl
     }
   };
 
+  const handleSendNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newNote.trim() || !initialData?._id) return;
+
+    setIsSendingNote(true);
+    try {
+      const res = await fetch(`/api/clients/${initialData._id}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: newNote }),
+      });
+      if (res.ok) {
+        const note = await res.json();
+        setNotes([...notes, note]);
+        setNewNote("");
+      }
+    } catch (err) {
+      console.error("Failed to send note", err);
+    } finally {
+      setIsSendingNote(false);
+    }
+  };
+
   const inputFields = [
     { name: "name", label: "Client Name", icon: <User size={16} />, placeholder: "Full Name", required: true },
     { name: "contactNumber", label: "Contact Number", icon: <Phone size={16} />, placeholder: "+1 234 567 890", required: true },
@@ -78,106 +137,192 @@ export default function ClientModal({ isOpen, onClose, onSave, initialData, titl
     { name: "business", label: "Business Type", icon: <Briefcase size={16} />, placeholder: "Industry/Niche" },
     { name: "requirement", label: "Requirement Scope", icon: <FileText size={16} />, placeholder: "Summary of needs" },
     { name: "description", label: "Detailed Description", icon: <FileText size={16} />, placeholder: "Full requirement details...", type: "textarea" },
-    { name: "status", label: "Status", icon: <ShieldCheck size={16} />, type: "select", options: ["Active", "RNA", "Callback", "Converted", "Lost", "Archived"] },
-    { name: "reaction", label: "Reaction", icon: <Users size={16} />, placeholder: "Positive/Neutral/Negative" },
-    { name: "meetings", label: "Meetings", icon: <Calendar size={16} />, placeholder: "Last Meeting Info" },
+    { name: "status", label: "Status", icon: <ShieldCheck size={16} />, type: "select", options: ["Active", "RNA", "Callback", "Converted", "Lost", "Archived", "Completed"] },
     { name: "assign", label: "Assigned To", icon: <User size={16} />, placeholder: "Responsible Person" },
-    { name: "callbackMonth", label: "Callback Month", icon: <Calendar size={16} />, placeholder: "Month of next contact" },
-    { name: "callback", label: "Callback Time", icon: <Calendar size={16} />, placeholder: "Specific date/time" },
+    { name: "callbackMonth", label: "Callback Month", icon: <Calendar size={16} />, type: "month" },
+    { name: "callback", label: "Callback Time", icon: <Calendar size={16} />, type: "datetime-local" },
   ];
 
   return (
     <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={`${styles.modal} animate-fade-in`}>
         <div className={styles.header}>
-          <h2>{title}</h2>
+          <div className={styles.titleGroup}>
+            <h2>{title}</h2>
+            {initialData?._id && (
+              <div className={styles.tabs}>
+                <button 
+                  type="button" 
+                  className={`${styles.tab} ${activeTab === 'details' ? styles.activeTab : ''}`}
+                  onClick={() => setActiveTab('details')}
+                >
+                  <FileText size={16} /> Details
+                </button>
+                <button 
+                  type="button" 
+                  className={`${styles.tab} ${activeTab === 'notes' ? styles.activeTab : ''}`}
+                  onClick={() => setActiveTab('notes')}
+                >
+                  <MessageSquare size={16} /> Notes ({notes.length})
+                </button>
+              </div>
+            )}
+          </div>
           <button onClick={onClose} className={styles.closeButton}>
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.grid}>
-            {inputFields.map((field, index) => (
-              <>
-                {field.name === 'callbackMonth' && (
-                  <div key="divider" className={styles.divider}>
-                    <Clock size={18} />
-                    <span>Schedule Callback</span>
+        {activeTab === 'details' ? (
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <div className={styles.grid}>
+              {inputFields.map((field) => (
+                <Fragment key={field.name}>
+                  {field.name === 'callbackMonth' && (
+                    <div className={styles.divider}>
+                      <Clock size={18} />
+                      <span>Schedule Callback</span>
+                    </div>
+                  )}
+                  <div key={field.name} className={`${styles.inputGroup} ${field.type === 'textarea' ? styles.fullWidth : ''}`}>
+                    <label htmlFor={field.name}>
+                      {field.label} {field.required && <span className={styles.required}>*</span>}
+                    </label>
+                    <div className={styles.inputWrapper}>
+                      <div className={styles.icon}>{field.icon}</div>
+                      {field.name === "assign" ? (
+                        <select
+                          id={field.name}
+                          name={field.name}
+                          value={(formData[field.name as keyof IClient] as string) || ""}
+                          onChange={handleChange}
+                          disabled={viewOnly || !isAdmin}
+                        >
+                          <option value="">Unassigned</option>
+                          <option value="admin">Super User (Admin)</option>
+                          {employees.map(emp => (
+                            <option key={emp.username} value={emp.username}>{emp.name}</option>
+                          ))}
+                        </select>
+                      ) : field.type === "select" ? (
+                        <select
+                          id={field.name}
+                          name={field.name}
+                          value={(formData[field.name as keyof IClient] as string) || ""}
+                          onChange={handleChange}
+                          required={field.required}
+                          disabled={viewOnly}
+                        >
+                          {field.options?.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : field.type === "textarea" ? (
+                        <textarea
+                          id={field.name}
+                          name={field.name}
+                          value={(formData[field.name as keyof IClient] as string) || ""}
+                          onChange={handleChange}
+                          placeholder={field.placeholder}
+                          required={field.required}
+                          rows={3}
+                          className={styles.textarea}
+                          disabled={viewOnly}
+                        />
+                      ) : (
+                        <input
+                          id={field.name}
+                          name={field.name}
+                          type={field.type || "text"}
+                          value={(formData[field.name as keyof IClient] as string) || ""}
+                          onChange={handleChange}
+                          placeholder={field.placeholder}
+                          disabled={viewOnly}
+                        />
+                      )}
+                    </div>
                   </div>
-                )}
-                <div key={field.name} className={`${styles.inputGroup} ${field.type === 'textarea' ? styles.fullWidth : ''}`}>
-                  <label htmlFor={field.name}>
-                    {field.label} {field.required && <span className={styles.required}>*</span>}
-                  </label>
-                  <div className={styles.inputWrapper}>
-                    <div className={styles.icon}>{field.icon}</div>
-                    {field.type === "select" ? (
-                      <select
-                        id={field.name}
-                        name={field.name}
-                        value={(formData[field.name as keyof IClient] as string) || ""}
-                        onChange={handleChange}
-                        required={field.required}
-                      >
-                        {field.options?.map((opt) => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    ) : field.type === "textarea" ? (
-                      <textarea
-                        id={field.name}
-                        name={field.name}
-                        value={(formData[field.name as keyof IClient] as string) || ""}
-                        onChange={handleChange}
-                        placeholder={field.placeholder}
-                        required={field.required}
-                        rows={3}
-                        className={styles.textarea}
-                      />
-                    ) : (
-                      <input
-                        id={field.name}
-                        name={field.name}
-                        type="text"
-                        value={(formData[field.name as keyof IClient] as string) || ""}
-                        onChange={handleChange}
-                        placeholder={field.placeholder}
-                        required={field.required}
-                      />
-                    )}
-                  </div>
-                </div>
-              </>
-            ))}
-          </div>
+                </Fragment>
+              ))}
+            </div>
 
-          <div className={styles.footer}>
-            <button type="button" onClick={onClose} className={styles.cancelButton}>
-              Cancel
-            </button>
-            <button type="submit" className={styles.saveButton} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 size={18} className={styles.spinner} />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save size={18} />
-                  Save Client
-                </>
+            <div className={styles.footer}>
+              <button type="button" onClick={onClose} className={styles.cancelButton}>
+                {viewOnly ? "Close" : "Cancel"}
+              </button>
+              {!viewOnly && (
+                <button type="submit" className={styles.saveButton} disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={18} className={styles.spinner} />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      Save Client
+                    </>
+                  )}
+                </button>
               )}
-            </button>
+            </div>
+          </form>
+        ) : (
+          <div className={styles.notesContainer}>
+            <div className={styles.notesTimeline}>
+              {notes.length === 0 ? (
+                <div className={styles.emptyNotes}>
+                  <MessageSquare size={48} />
+                  <p>No notes yet. Start the conversation!</p>
+                </div>
+              ) : (
+                Object.entries(noteGroups).map(([date, msgs]) => (
+                  <div key={date} className={styles.dateGroup}>
+                    <div className={styles.dateHeader}>
+                      <CalendarDays size={14} />
+                      <span>{date}</span>
+                    </div>
+                    <div className={styles.notesListLegacy}>
+                      {msgs.map((note) => (
+                        <div key={note._id} className={styles.noteEntry}>
+                          <div className={styles.noteHeader}>
+                            <div className={styles.authorBadge}>
+                              <div className={styles.authorAvatar}>
+                                {note.author.substring(0, 1).toUpperCase()}
+                              </div>
+                              <div className={styles.authorMeta}>
+                                <span className={styles.noteAuthor}>{note.author}</span>
+                                <span className={styles.authorRole}>{note.authorRole}</span>
+                              </div>
+                            </div>
+                            <span className={styles.noteTime}>
+                              {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                            </span>
+                          </div>
+                          <div className={styles.noteContent}>{note.content}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <form onSubmit={handleSendNote} className={styles.noteInputArea}>
+              <input 
+                type="text" 
+                placeholder="Type a message..." 
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                disabled={isSendingNote}
+              />
+              <button type="submit" disabled={isSendingNote || !newNote.trim()}>
+                {isSendingNote ? <Loader2 size={18} className={styles.spinner} /> : <Send size={18} />}
+              </button>
+            </form>
           </div>
-        </form>
+        )}
       </div>
     </div>
   );
 }
 
-function ShieldCheck({ size }: { size: number }) {
-  return <ShieldCheckIcon size={size} />;
-}
-
-import { ShieldCheck as ShieldCheckIcon } from "lucide-react";

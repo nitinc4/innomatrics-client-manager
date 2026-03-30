@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import styles from "./page.module.css";
 import ClientTable from "@/components/ClientTable";
 import ClientModal from "@/components/ClientModal";
+import ScheduleModal from "@/components/ScheduleModal";
 import { 
   Plus, 
   Users, 
@@ -12,34 +13,51 @@ import {
   ArrowUpRight,
   Search,
   Filter,
-  Loader2
+  Loader2,
+  Phone,
+  CalendarDays,
+  XCircle,
+  Archive
 } from "lucide-react";
 import { IClient } from "@/models/Client";
 
 export default function Dashboard() {
   const [clients, setClients] = useState<IClient[]>([]);
+  const [statuses, setStatuses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [isViewOnly, setIsViewOnly] = useState(false);
   const [selectedClient, setSelectedClient] = useState<IClient | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
 
-  const fetchClients = async () => {
+  const fetchData = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/clients?discarded=false");
-      if (response.ok) {
-        const data = await response.json();
+      const [clientsRes, statsRes] = await Promise.all([
+        fetch("/api/clients?discarded=false"),
+        fetch("/api/statuses")
+      ]);
+      
+      if (clientsRes.ok) {
+        const data = await clientsRes.json();
         setClients(data);
       }
+
+      if (statsRes.ok) {
+        const data = await statsRes.json();
+        setStatuses(data);
+      }
     } catch (error) {
-      console.error("Failed to fetch clients:", error);
+      console.error("Failed to fetch dashboard data:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchClients();
+    fetchData();
   }, []);
 
   const handleSaveClient = async (clientData: Partial<IClient>) => {
@@ -54,7 +72,7 @@ export default function Dashboard() {
       });
 
       if (response.ok) {
-        fetchClients();
+        fetchData();
       }
     } catch (error) {
       console.error("Failed to save client:", error);
@@ -72,33 +90,88 @@ export default function Dashboard() {
       });
 
       if (response.ok) {
-        fetchClients();
+        fetchData();
       }
     } catch (error) {
       console.error("Failed to discard client:", error);
     }
   };
 
+  const handleUpdateStatus = async (id: string, status: string) => {
+    try {
+      const response = await fetch(`/api/clients/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      if (response.ok) {
+        fetchData();
+      }
+    } catch (error) {
+      console.error("Failed to update status:", error);
+    }
+  };
+
   const openAddModal = () => {
     setSelectedClient(null);
+    setIsViewOnly(false);
+    setIsModalOpen(true);
+  };
+
+  const openViewModal = (client: IClient) => {
+    setSelectedClient(client);
+    setIsViewOnly(true);
     setIsModalOpen(true);
   };
 
   const openEditModal = (client: IClient) => {
     setSelectedClient(client);
+    setIsViewOnly(false);
     setIsModalOpen(true);
   };
 
-  const filteredClients = clients.filter(client => 
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.contactNumber.includes(searchTerm) ||
-    client.business?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const openScheduleModal = (client: IClient) => {
+    setSelectedClient(client);
+    setIsScheduleOpen(true);
+  };
 
-  const stats = [
-    { label: "Total Clients", value: clients.length, icon: <Users size={24} />, color: "#6366f1" },
-    { label: "Active Leads", value: clients.filter(c => c.status === "Active").length, icon: <Clock size={24} />, color: "#facc15" },
-    { label: "Converted", value: clients.filter(c => c.status === "Converted").length, icon: <CheckCircle2 size={24} />, color: "#14b8a6" },
+  const filteredClients = clients.filter(client => {
+    const matchesSearch = 
+      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.contactNumber.includes(searchTerm) ||
+      client.business?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.requirement?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "All" || client.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const total = clients.length;
+
+  const getStatusIcon = (name: string) => {
+    switch (name.toLowerCase()) {
+      case 'active': return <Clock size={20} />;
+      case 'rna': return <Phone size={20} />;
+      case 'callback': return <CalendarDays size={20} />;
+      case 'converted': return <CheckCircle2 size={20} />;
+      case 'lost': return <XCircle size={20} />;
+      case 'completed': return <CheckCircle2 size={20} />;
+      case 'archived': return <Archive size={20} />;
+      default: return <ArrowUpRight size={20} />;
+    }
+  };
+
+  const statusStats = [
+    { label: "Total", value: total, color: "#6366f1", bg: "#eff6ff", icon: <Users size={20} />, status: "All" },
+    ...statuses.map(s => ({
+      label: s.name,
+      value: clients.filter(c => c.status === s.name).length,
+      color: s.color,
+      bg: `${s.color}15`,
+      icon: getStatusIcon(s.name),
+      status: s.name
+    }))
   ];
 
   return (
@@ -115,24 +188,44 @@ export default function Dashboard() {
       </header>
 
       <section className={styles.statsGrid}>
-        {stats.map((stat, idx) => (
-          <div key={idx} className={styles.statCard}>
-            <div className={styles.statIcon} style={{ backgroundColor: `${stat.color}15`, color: stat.color }}>
-              {stat.icon}
-            </div>
-            <div className={styles.statInfo}>
-              <span className={styles.statLabel}>{stat.label}</span>
-              <div className={styles.statValueContainer}>
-                <h3 className={styles.statValue}>{stat.value}</h3>
-                <span className={styles.statTrend}>
-                  <ArrowUpRight size={14} />
-                  12%
-                </span>
+        {statusStats.map((stat, idx) => {
+          const pct = total > 0 ? Math.round((stat.value / total) * 100) : 0;
+          const isActive = statusFilter === stat.status;
+          return (
+            <div 
+              key={idx} 
+              className={`${styles.statCard} ${isActive ? styles.statCardActive : ""}`}
+              onClick={() => setStatusFilter(stat.status)}
+              style={{ cursor: "pointer", borderColor: isActive ? stat.color : undefined }}
+              title={`Filter by ${stat.label}`}
+            >
+              <div className={styles.statTop}>
+                <div className={styles.statIcon} style={{ backgroundColor: stat.bg, color: stat.color }}>
+                  {stat.icon}
+                </div>
+                <div className={styles.statInfo}>
+                  <span className={styles.statLabel}>{stat.label}</span>
+                  <div className={styles.statValueContainer}>
+                    <h3 className={styles.statValue}>{stat.value}</h3>
+                    {stat.status !== "All" && (
+                      <span className={styles.statPct} style={{ color: stat.color }}>
+                        {pct}%
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
+              {stat.status !== "All" && (
+                <div className={styles.statBar}>
+                  <div 
+                    className={styles.statBarFill} 
+                    style={{ width: `${pct}%`, backgroundColor: stat.color }}
+                  />
+                </div>
+              )}
             </div>
-            <div className={styles.statBgIcon}>{stat.icon}</div>
-          </div>
-        ))}
+          );
+        })}
       </section>
 
       <section className={styles.tableSection}>
@@ -147,11 +240,18 @@ export default function Dashboard() {
               className={styles.searchInput}
             />
           </div>
-          <div className={styles.tableActions}>
-            <button className={styles.filterBtn}>
-              <Filter size={18} />
-              <span>Filters</span>
-            </button>
+          <div className={styles.filterWrapper}>
+            <Filter size={18} className={styles.filterIcon} />
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className={styles.statusFilter}
+            >
+              <option value="All">All Statuses</option>
+              {statuses.map(s => (
+                <option key={s._id} value={s.name}>{s.name}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -164,6 +264,9 @@ export default function Dashboard() {
           <ClientTable 
             clients={filteredClients} 
             onEdit={openEditModal} 
+            onView={openViewModal}
+            onScheduleCallback={openScheduleModal}
+            onUpdateStatus={handleUpdateStatus}
             onDiscard={handleDiscardClient}
           />
         )}
@@ -174,7 +277,15 @@ export default function Dashboard() {
         onClose={() => setIsModalOpen(false)} 
         onSave={handleSaveClient}
         initialData={selectedClient}
-        title={selectedClient ? "Edit Client Details" : "Register New Client"}
+        title={isViewOnly ? "Client Details" : (selectedClient ? "Edit Client Details" : "Register New Client")}
+        viewOnly={isViewOnly}
+      />
+
+      <ScheduleModal 
+        isOpen={isScheduleOpen}
+        onClose={() => setIsScheduleOpen(false)}
+        onSave={handleSaveClient}
+        client={selectedClient}
       />
     </div>
   );

@@ -68,6 +68,22 @@ export default function DiscardSection() {
     }
   };
 
+  const handleUpdateStatus = async (id: string, status: string) => {
+    try {
+      const response = await fetch(`/api/clients/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      if (response.ok) {
+        fetchDiscardedClients();
+      }
+    } catch (error) {
+      console.error("Failed to update status:", error);
+    }
+  };
+
   const filteredClients = clients.filter(client => 
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.contactNumber.includes(searchTerm)
@@ -109,7 +125,10 @@ export default function DiscardSection() {
         ) : (
           <ClientTable 
             clients={filteredClients} 
-            onEdit={() => {}} // Edit usually not needed in discard but model expects it
+            onEdit={() => {}} 
+            onView={() => {}}
+            onScheduleCallback={() => {}}
+            onUpdateStatus={handleUpdateStatus}
             onRestore={handleRestoreClient}
             onDelete={handleDeletePermanently}
             isDiscardView={true}

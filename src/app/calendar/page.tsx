@@ -9,16 +9,18 @@ import {
   Clock,
   User,
   Phone,
-  LayoutDashboard
+  LayoutDashboard,
+  CheckCircle2
 } from "lucide-react";
 import { IClient } from "@/models/Client";
+import { formatTime12h } from "@/lib/utils";
 import Link from "next/link";
 
 export default function CallbackCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [clients, setClients] = useState<IClient[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchCallbacks = async () => {
     setIsLoading(true);
@@ -26,14 +28,29 @@ export default function CallbackCalendar() {
       const response = await fetch("/api/clients?discarded=false");
       if (response.ok) {
         const data = await response.json();
-        // Filter clients who have callbacks
-        const callbackClients = data.filter((c: IClient) => c.callback);
-        setClients(callbackClients);
+        // Filtering in-memory for simplicity or rely on server-side if exists
+        setClients(data);
       }
     } catch (error) {
       console.error("Failed to fetch callbacks:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleUpdateStatus = async (id: string, status: string) => {
+    try {
+      const response = await fetch(`/api/clients/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      if (response.ok) {
+        fetchCallbacks();
+      }
+    } catch (error) {
+      console.error("Failed to mark as done:", error);
     }
   };
 
@@ -151,19 +168,27 @@ export default function CallbackCalendar() {
                     </div>
                     <div className={styles.timeInfo}>
                       <Clock size={14} />
-                      <span>{client.callback.split('T')[1] || "No time"}</span>
+                      <span>{formatTime12h(client.callback)}</span>
                     </div>
                   </div>
                   <div className={styles.itemContact}>
                     <Phone size={14} />
                     <span>{client.contactNumber}</span>
                   </div>
-                  <div className={styles.itemFooter}>
-                    <span className={styles.statusBadge}>{client.status}</span>
-                    <Link href={`/?id=${client._id}`} className={styles.viewLink}>
-                      View Client <LayoutDashboard size={14} />
-                    </Link>
-                  </div>
+                    <div className={styles.itemFooter}>
+                      <select 
+                        className={`${styles.statusSelect} ${styles[client.status.toLowerCase()] || ""}`}
+                        value={client.status}
+                        onChange={(e) => handleUpdateStatus(client._id!, e.target.value)}
+                      >
+                        {["Active", "RNA", "Callback", "Converted", "Lost", "Archived", "Completed"].map(status => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </select>
+                      <Link href={`/?id=${client._id}`} className={styles.viewLink}>
+                        View <LayoutDashboard size={14} />
+                      </Link>
+                    </div>
                 </div>
               ))
             ) : (

@@ -25,8 +25,7 @@ export default function LoginPage() {
       });
 
       if (response.ok) {
-        router.push("/");
-        router.refresh();
+        window.location.href = "/";
       } else {
         const data = await response.json();
         setError(data.error || "Invalid username or password");

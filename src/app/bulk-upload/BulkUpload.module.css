@@ -1,0 +1,172 @@
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.header { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #4f46e5;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s;
+}
+.backLink:hover { color: #4338ca; text-decoration: underline; }
+
+.title { font-size: 2rem; font-weight: 700; color: #0f172a; letter-spacing: -0.025em; }
+.subtitle { color: #64748b; font-size: 1rem; }
+
+.content { display: flex; flex-direction: column; gap: 2rem; }
+
+.optionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: all 0.2s;
+}
+.card:hover { border-color: #c7d2fe; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+
+.cardIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card h3 { font-size: 1rem; font-weight: 700; color: #0f172a; }
+
+.card p { font-size: 0.875rem; color: #64748b; line-height: 1.5; flex: 1; }
+
+.templateBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 10px;
+  color: #1d4ed8;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+.templateBtn:hover { background: #dbeafe; border-color: #93c5fd; }
+
+.fileInputWrapper { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.hiddenInput { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+.customFileInput {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 10px;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.customFileInput:hover { border-color: #4f46e5; color: #4f46e5; background: #fafbff; }
+
+.uploadBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(79,70,229,0.25);
+}
+.uploadBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(79,70,229,0.35); }
+.uploadBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.spinner { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* Alert Messages */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+}
+
+.success { background: #f0fdf4; border: 1px solid #a7f3d0; color: #065f46; }
+.error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+
+.alertContent { display: flex; flex-direction: column; gap: 0.25rem; }
+.alertContent strong { font-weight: 700; }
+.alertContent p { font-size: 0.875rem; opacity: 0.8; }
+
+/* Preview Table */
+.previewSection { display: flex; flex-direction: column; gap: 1rem; }
+
+.previewSection h3 { font-size: 1rem; font-weight: 700; color: #0f172a; }
+
+.tableWrapper {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow-x: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.previewTable { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.previewTable th {
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: left;
+  border-bottom: 2px solid #f1f5f9;
+  white-space: nowrap;
+}
+.previewTable td {
+  padding: 0.75rem 1rem;
+  color: #0f172a;
+  border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
+}
+.previewTable tr:last-child td { border-bottom: none; }
+.previewTable tr:hover td { background: #f8fafc; }

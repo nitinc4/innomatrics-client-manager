@@ -1,11 +1,7 @@
 const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
 const schedule = require('node-schedule');
-const express = require('express');
 require('dotenv').config();
-
-const app = express();
-const PORT = process.env.PORT || 10000;
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -123,13 +119,4 @@ schedule.scheduleJob('*/10 * * * *', checkReminders);
 // Initial check on start
 connectDB().then(() => {
   checkReminders();
-});
-
-// Health check endpoint for Render
-app.get('/', (req, res) => {
-  res.send('Reminder Service is running...');
-});
-
-app.listen(PORT, () => {
-  console.log(`Web server listening on port ${PORT}`);
 });

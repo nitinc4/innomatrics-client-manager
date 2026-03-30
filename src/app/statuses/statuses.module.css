@@ -1,0 +1,116 @@
+.container { 
+  padding: 2rem; 
+  max-width: 1000px; 
+  margin: 0 auto; 
+}
+
+.header { margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; }
+.title { font-size: 1.875rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem; }
+.subtitle { color: #64748b; font-size: 0.9375rem; }
+
+.card { 
+  background: white; 
+  border-radius: 16px; 
+  border: 1px solid #e2e8f0; 
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.statusList { list-style: none; padding: 0; margin: 0; }
+.statusItem { 
+  display: flex; 
+  align-items: center; 
+  gap: 1rem; 
+  padding: 1rem 1.5rem; 
+  border-bottom: 1px solid #f1f5f9; 
+  transition: all 0.2s;
+}
+.statusItem:hover { background: #f8fafc; }
+.statusItem:last-child { border-bottom: none; }
+
+.dragHandle { color: #94a3b8; cursor: grab; }
+
+.statusInfo { flex: 1; display: flex; align-items: center; gap: 1rem; }
+.colorPreview { width: 16px; height: 16px; border-radius: 4px; }
+.statusName { font-weight: 600; color: #1e293b; }
+
+.actions { display: flex; gap: 0.5rem; }
+.actionBtn { 
+  padding: 0.5rem; 
+  border-radius: 8px; 
+  border: 1px solid #e2e8f0; 
+  background: white; 
+  color: #64748b; 
+  cursor: pointer; 
+  transition: all 0.2s;
+}
+.actionBtn:hover { border-color: #cbd5e1; color: #1e293b; }
+.deleteBtn:hover { background: #fef2f2; border-color: #fecaca; color: #ef4444; }
+
+.addBtn { 
+  display: flex; 
+  align-items: center; 
+  gap: 0.5rem; 
+  padding: 0.75rem 1.25rem; 
+  background: #4f46e5; 
+  color: white; 
+  border: none; 
+  border-radius: 10px; 
+  font-weight: 600; 
+  cursor: pointer; 
+  transition: all 0.2s;
+}
+.addBtn:hover { background: #4338ca; transform: translateY(-1px); }
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 1rem;
+}
+
+.modal {
+  background: white;
+  width: 100%;
+  max-width: 450px;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modal h3 { margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 700; }
+
+.inputGroup { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.inputGroup label { font-size: 0.875rem; font-weight: 600; color: #475569; }
+.inputGroup input { 
+  padding: 0.75rem; 
+  border-radius: 10px; 
+  border: 1px solid #e2e8f0; 
+  background: #f8fafc; 
+  outline: none;
+}
+.inputGroup input:focus { border-color: #4f46e5; background: white; }
+
+.colorGrid { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.colorOption { 
+  width: 32px; 
+  height: 32px; 
+  border-radius: 8px; 
+  cursor: pointer; 
+  border: 2px solid transparent; 
+  transition: all 0.2s;
+}
+.colorOption:hover { transform: scale(1.1); }
+.selectedColor { border-color: #0f172a; transform: scale(1.1); }
+
+.modalActions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
+.cancelBtn { padding: 0.75rem 1.5rem; background: #f1f5f9; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
+.confirmBtn { padding: 0.75rem 1.5rem; background: #4f46e5; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
+
+.error { color: #ef4444; font-size: 0.875rem; margin-bottom: 1rem; }

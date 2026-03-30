@@ -9,8 +9,6 @@ export interface IClient {
   requirement: string;
   description: string;
   status: string;
-  reaction: string;
-  meetings: string;
   assign: string;
   callbackMonth: string;
   callback: string;
@@ -29,8 +27,6 @@ const ClientSchema = new Schema<IClient>(
     requirement: { type: String },
     description: { type: String },
     status: { type: String, default: 'Active' },
-    reaction: { type: String },
-    meetings: { type: String },
     assign: { type: String },
     callbackMonth: { type: String },
     callback: { type: String },

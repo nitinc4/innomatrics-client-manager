@@ -10,24 +10,50 @@ import {
   LayoutDashboard,
   CalendarDays,
   Settings,
-  ShieldCheck
+  ShieldCheck,
+  FileSpreadsheet,
+  UserCheck,
+  MessageSquare,
+  UserPlus,
+  Activity,
+  CheckSquare,
+  Mail
 } from "lucide-react";
+import { useUser } from "@/hooks/useUser";
+import { useState } from "react";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [isAddingAdmin, setIsAddingAdmin] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [newAdmin, setNewAdmin] = useState({ name: "", username: "", password: "" });
+  const [profileData, setProfileData] = useState({ name: "", email: "", contactNumber: "" });
+  const [error, setError] = useState("");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
+  const { user, isAdmin } = useUser();
   const navItems = [
     { name: "Dashboard", href: "/", icon: <LayoutDashboard size={20} /> },
     { name: "Clients", href: "/clients", icon: <Users size={20} /> },
     { name: "Calendar", href: "/calendar", icon: <CalendarDays size={20} /> },
+    { name: "Tasks", href: "/tasks", icon: <CheckSquare size={20} /> },
+    { name: "Notes", href: "/notes", icon: <MessageSquare size={20} /> },
+    isAdmin && { name: "Employees", href: "/employees", icon: <UserCheck size={20} /> },
+    isAdmin && { name: "Statuses", href: "/statuses", icon: <Activity size={20} /> },
+    isAdmin && { name: "Bulk Upload", href: "/bulk-upload", icon: <FileSpreadsheet size={20} /> },
     { name: "Discarded", href: "/discard", icon: <Trash2 size={20} /> },
-    { name: "Settings", href: "/settings", icon: <Settings size={20} /> },
-  ];
+    isAdmin && { name: "Settings", href: "/settings", icon: <Settings size={20} /> },
+  ].filter(Boolean) as { name: string; href: string; icon: React.ReactNode }[];
 
   const handleLogout = async () => {
-    // Simple logout by clearing the cookie (or calling an API)
-    document.cookie = "auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
-    window.location.href = "/login";
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Fallback redirect
+      window.location.href = "/login";
+    }
   };
 
   return (
@@ -56,19 +82,173 @@ export default function Sidebar() {
       </div>
 
       <div className={styles.bottomContainer}>
-        <div className={styles.userProfile}>
-          <div className={styles.avatar}>SU</div>
-          <div className={styles.userInfo}>
-            <span className={styles.userName}>Super User</span>
-            <span className={styles.userRole}>Administrator</span>
+        <div className={styles.userProfile} onClick={() => {
+          if (user) {
+            setProfileData({ 
+              name: user.name, 
+              // @ts-ignore
+              email: user.email || "", 
+              // @ts-ignore
+              contactNumber: user.contactNumber || "" 
+            });
+            setIsEditingProfile(true);
+          }
+        }} style={{ cursor: 'pointer' }}>
+          <div className={styles.avatar}>
+            {user?.name?.substring(0, 2).toUpperCase() || "..."}
           </div>
+          <div className={styles.userInfo}>
+            <span className={styles.userName}>{user?.name || "Loading..."}</span>
+            <span className={styles.userRole}>{user?.role === 'admin' ? 'Administrator' : 'Employee'}</span>
+          </div>
+          {isAdmin && (
+            <button 
+              className={styles.addAdminBtn} 
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsAddingAdmin(true);
+              }}
+              title="Add Admin"
+            >
+              <UserPlus size={16} />
+            </button>
+          )}
         </div>
         
-        <button onClick={handleLogout} className={styles.logoutButton}>
-          <LogOut size={18} />
-          <span>Logout</span>
-        </button>
+        <div className={styles.authActions}>
+          <button onClick={handleLogout} className={styles.logoutButton}>
+            <LogOut size={18} />
+            <span>Logout</span>
+          </button>
+        </div>
       </div>
+
+      {isAddingAdmin && (
+        <div className={styles.modalOverlay} onClick={e => e.target === e.currentTarget && setIsAddingAdmin(false)}>
+          <div className={styles.adminModal}>
+            <h3>Register New Admin</h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setError("");
+              try {
+                const res = await fetch("/api/users", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({...newAdmin, role: 'admin'}),
+                });
+                if (res.ok) {
+                  setIsAddingAdmin(false);
+                  setNewAdmin({ name: "", username: "", password: "" });
+                  alert("Admin account created successfully!");
+                } else {
+                  const data = await res.json();
+                  setError(data.error || "Failed to create admin");
+                }
+              } catch (err) {
+                setError("An error occurred");
+              }
+            }}>
+              <div className={styles.inputGroup}>
+                <label>Full Name</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={newAdmin.name}
+                  onChange={e => setNewAdmin({...newAdmin, name: e.target.value})}
+                />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Username</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={newAdmin.username}
+                  onChange={e => setNewAdmin({...newAdmin, username: e.target.value})}
+                />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Password</label>
+                <input 
+                  type="password" 
+                  required 
+                  value={newAdmin.password}
+                  onChange={e => setNewAdmin({...newAdmin, password: e.target.value})}
+                />
+              </div>
+              {error && <p className={styles.error}>{error}</p>}
+              <div className={styles.modalActions}>
+                <button type="button" onClick={() => setIsAddingAdmin(false)}>Cancel</button>
+                <button type="submit" className={styles.confirmBtn}>Create Admin</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {isEditingProfile && (
+        <div className={styles.modalOverlay} onClick={e => e.target === e.currentTarget && setIsEditingProfile(false)}>
+          <div className={styles.adminModal}>
+            <h3>Edit Profile</h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setIsSavingProfile(true);
+              setError("");
+              try {
+                const res = await fetch("/api/users/profile", {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(profileData),
+                });
+                if (res.ok) {
+                  setIsEditingProfile(false);
+                  window.location.reload(); // Refresh to show changes
+                } else {
+                  const data = await res.json();
+                  setError(data.error || "Failed to update profile");
+                }
+              } catch (err) {
+                setError("An error occurred");
+              } finally {
+                setIsSavingProfile(false);
+              }
+            }}>
+              <div className={styles.inputGroup}>
+                <label>Full Name</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={profileData.name}
+                  onChange={e => setProfileData({...profileData, name: e.target.value})}
+                />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Email Address</label>
+                <input 
+                  type="email" 
+                  required 
+                  value={profileData.email}
+                  onChange={e => setProfileData({...profileData, email: e.target.value})}
+                  placeholder="name@example.com"
+                />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Contact Number</label>
+                <input 
+                  type="text" 
+                  value={profileData.contactNumber}
+                  onChange={e => setProfileData({...profileData, contactNumber: e.target.value})}
+                />
+              </div>
+              {error && <p className={styles.error}>{error}</p>}
+              <div className={styles.modalActions}>
+                <button type="button" onClick={() => setIsEditingProfile(false)}>Cancel</button>
+                <button type="submit" className={styles.confirmBtn} disabled={isSavingProfile}>
+                  {isSavingProfile ? "Saving..." : "Save Profile"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
