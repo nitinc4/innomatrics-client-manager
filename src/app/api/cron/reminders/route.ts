@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
 import { checkReminders } from '@/lib/reminder-scheduler';
+import { getSession } from '@/lib/auth';
 
 // Special security header checks for Vercel Cron
 // https://vercel.com/docs/cron-jobs#securing-cron-jobs
 export async function GET(request: Request) {
+  const session = await getSession();
   const authHeader = request.headers.get('authorization');
   
-  // In development, you can skip this by checking Node environment
+  // In production, require either the CRON_SECRET or a valid user session
   if (process.env.NODE_ENV === 'production') {
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    const isCronTrigger = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+    if (!isCronTrigger && !session) {
       return NextResponse.json({ error: 'Unauthorized Trigger' }, { status: 401 });
     }
   }

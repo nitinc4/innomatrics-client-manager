@@ -20,7 +20,7 @@ import {
   Mail
 } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -32,6 +32,36 @@ export default function Sidebar() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const { user, isAdmin } = useUser();
+  const lastPingRef = useRef<number>(0);
+
+  // Passive Polling: Ping the reminder service every 10 minutes
+  // as a workaround for Vercel Hobby plan cron limits.
+  useEffect(() => {
+    if (!user) return;
+
+    const pingService = async () => {
+      const now = Date.now();
+      // Only ping if 10 minutes have passed (600,000ms)
+      if (now - lastPingRef.current < 600000) return;
+
+      try {
+        console.log("[Service] Syncing notifications...");
+        await fetch("/api/cron/reminders");
+        lastPingRef.current = now;
+      } catch (err) {
+        // Silently fail, it's a background task
+      }
+    };
+
+    // Initial ping on load
+    pingService();
+
+    // Set up interval for subsequent pings
+    const interval = setInterval(pingService, 60000); // Check every minute, but logic inside handles 10m limit
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   const navItems = [
     { name: "Dashboard", href: "/", icon: <LayoutDashboard size={20} /> },
     { name: "Clients", href: "/clients", icon: <Users size={20} /> },
