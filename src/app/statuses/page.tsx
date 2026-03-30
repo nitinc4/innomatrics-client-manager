@@ -202,7 +202,10 @@ export default function StatusesPage() {
                 <input 
                   type="number" 
                   value={formData.order}
-                  onChange={e => setFormData({...formData, order: parseInt(e.target.value)})}
+                  onChange={e => {
+                    const val = parseInt(e.target.value);
+                    setFormData({...formData, order: isNaN(val) ? 0 : val});
+                  }}
                 />
               </div>
 

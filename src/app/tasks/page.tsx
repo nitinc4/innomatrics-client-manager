@@ -93,11 +93,15 @@ export default function TasksPage() {
     // Based on my schema: clientId is ObjectId, task is string.
     // User said: "manually enter details along with task"
     // I'll append the manual name to the task description if no client selected.
-    const submissionData = {
+    const submissionData: any = {
       ...formData,
       task: formData.clientId ? formData.task : `[${formData.manualClient}] ${formData.task}`,
       assignedTo: formData.assignedTo || user?.username
     };
+
+    if (!submissionData.clientId) {
+      delete submissionData.clientId;
+    }
 
     try {
       const res = await fetch("/api/tasks", {
