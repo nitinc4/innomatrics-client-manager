@@ -27,7 +27,14 @@ export default function Sidebar() {
   const [isAddingAdmin, setIsAddingAdmin] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [newAdmin, setNewAdmin] = useState({ name: "", username: "", password: "" });
-  const [profileData, setProfileData] = useState({ name: "", email: "", contactNumber: "" });
+  const [profileData, setProfileData] = useState({ 
+    name: "", 
+    email: "", 
+    contactNumber: "",
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
   const [error, setError] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
@@ -119,7 +126,10 @@ export default function Sidebar() {
               // @ts-ignore
               email: user.email || "", 
               // @ts-ignore
-              contactNumber: user.contactNumber || "" 
+              contactNumber: user.contactNumber || "",
+              currentPassword: "",
+              newPassword: "",
+              confirmPassword: ""
             });
             setIsEditingProfile(true);
           }
@@ -220,6 +230,12 @@ export default function Sidebar() {
             <h3>Edit Profile</h3>
             <form onSubmit={async (e) => {
               e.preventDefault();
+              
+              if (profileData.newPassword && profileData.newPassword !== profileData.confirmPassword) {
+                setError("New passwords do not match");
+                return;
+              }
+
               setIsSavingProfile(true);
               setError("");
               try {
@@ -268,6 +284,37 @@ export default function Sidebar() {
                   onChange={e => setProfileData({...profileData, contactNumber: e.target.value})}
                 />
               </div>
+
+              <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+                <p style={{ fontSize: '0.8125rem', color: '#64748b', fontWeight: 600, marginBottom: '12px' }}>Change Password (Optional)</p>
+                <div className={styles.inputGroup}>
+                  <label>Current Password</label>
+                  <input 
+                    type="password" 
+                    value={profileData.currentPassword}
+                    onChange={e => setProfileData({...profileData, currentPassword: e.target.value})}
+                    placeholder="Verify current password"
+                  />
+                </div>
+                <div className={styles.inputGroup}>
+                  <label>New Password</label>
+                  <input 
+                    type="password" 
+                    value={profileData.newPassword}
+                    onChange={e => setProfileData({...profileData, newPassword: e.target.value})}
+                    placeholder="Min 6 characters"
+                  />
+                </div>
+                <div className={styles.inputGroup}>
+                  <label>Confirm New Password</label>
+                  <input 
+                    type="password" 
+                    value={profileData.confirmPassword}
+                    onChange={e => setProfileData({...profileData, confirmPassword: e.target.value})}
+                  />
+                </div>
+              </div>
+
               {error && <p className={styles.error}>{error}</p>}
               <div className={styles.modalActions}>
                 <button type="button" onClick={() => setIsEditingProfile(false)}>Cancel</button>

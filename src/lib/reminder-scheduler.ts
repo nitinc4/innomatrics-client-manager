@@ -5,7 +5,9 @@ import Settings from '@/models/Settings';
 import User from '@/models/User';
 import dbConnect from '@/lib/mongodb';
 
-async function sendEmailToEmployee(settings: any, client: any, employee: any) {
+async function sendEmailToRecipients(settings: any, client: any, recipients: string[]) {
+  if (!recipients || recipients.length === 0) return false;
+
   // Use settings config if available, otherwise fallback to env
   const transporter = nodemailer.createTransport({
     host: settings.smtpHost || 'smtp.gmail.com',
@@ -17,16 +19,9 @@ async function sendEmailToEmployee(settings: any, client: any, employee: any) {
     },
   });
 
-  // Collect recipient email
-  const recipients = employee && employee.email
-    ? employee.email 
-    : settings.reminderEmail;
-
-  if (!recipients) return false;
-
   const mailOptions = {
     from: `"Innomatrics CRM" <${settings.smtpUser || process.env.SMTP_USER}>`,
-    to: recipients,
+    to: recipients.join(', '),
     subject: `🕒 Callback Reminder: ${client.name}`,
     html: `
       <div style="font-family: sans-serif; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; max-width: 500px;">
@@ -61,7 +56,7 @@ async function sendEmailToEmployee(settings: any, client: any, employee: any) {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`[Reminder Service] Reminder broadcasted to: ${recipients}`);
+    console.log(`[Reminder Service] Reminder broadcasted to: ${recipients.join(', ')}`);
     return true;
   } catch (err) {
     console.error(`[Reminder Service] Delivery failed for ${client.name}:`, err);
@@ -76,6 +71,10 @@ export async function checkReminders() {
 
     const settings = await Settings.findOne();
     if (!settings) return;
+
+    // Fetch all active admins to include in all notifications
+    const admins = await User.find({ role: 'admin', status: 'active' });
+    const adminEmails = admins.map(a => a.email).filter(Boolean);
 
     const now = new Date();
     const leadTimeMinutes = settings.remindBefore || 60; // Default to 1 hour
@@ -98,15 +97,22 @@ export async function checkReminders() {
     console.log(`[Reminder Service] Processing ${toNotify.length} priority notifications.`);
 
     for (const client of toNotify) {
-      // Find the assigned employee to get their multi-email list
-      let assignedUser = null;
-      if (client.assign && client.assign !== 'admin') {
-        assignedUser = await User.findOne({ username: client.assign });
-      } else if (client.assign === 'admin') {
-        assignedUser = await User.findOne({ role: 'admin' });
+      const recipients = [...adminEmails];
+      
+      // Add the global reminder email if not already present
+      if (settings.reminderEmail && !recipients.includes(settings.reminderEmail)) {
+        recipients.push(settings.reminderEmail);
       }
 
-      const success = await sendEmailToEmployee(settings, client, assignedUser);
+      // Find the assigned employee
+      if (client.assign && client.assign !== 'admin') {
+        const assignedUser = await User.findOne({ username: client.assign });
+        if (assignedUser && assignedUser.email && !recipients.includes(assignedUser.email)) {
+          recipients.push(assignedUser.email);
+        }
+      }
+
+      const success = await sendEmailToRecipients(settings, client, recipients);
       if (success) {
         client.reminderSent = true;
         await client.save();
