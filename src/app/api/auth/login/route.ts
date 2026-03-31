@@ -14,7 +14,13 @@ export async function POST(request: NextRequest) {
 
     if (username === SUPER_USER_USERNAME && password === SUPER_USER_PASSWORD) {
       // Admin session
-      const sessionData = { username: "admin", role: "admin" as const, name: "Super User" };
+      const sessionData = { 
+        username: "admin", 
+        role: "admin" as const, 
+        name: "Super User",
+        email: process.env.ADMIN_EMAIL || "admin@example.com",
+        contactNumber: ""
+      };
       const response = NextResponse.json({ message: "Login successful", user: sessionData });
       
       const cookieStore = await cookies();
@@ -38,6 +44,8 @@ export async function POST(request: NextRequest) {
         username: employee.username, 
         role: employee.role as any, 
         name: employee.name, 
+        email: employee.email,
+        contactNumber: employee.contactNumber,
         id: employee._id?.toString() 
       };
       

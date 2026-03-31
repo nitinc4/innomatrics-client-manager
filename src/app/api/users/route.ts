@@ -12,7 +12,9 @@ export async function GET(request: NextRequest) {
     }
 
     await dbConnect();
-    const users = await User.find({ role: "employee" }).lean().sort({ createdAt: -1 });
+    const { searchParams } = new URL(request.url);
+    const role = searchParams.get("role") || "employee";
+    const users = await User.find({ role }).lean().sort({ createdAt: -1 });
     
     // Fetch stats for each employee
     const usersWithStats = await Promise.all(users.map(async (u: any) => {

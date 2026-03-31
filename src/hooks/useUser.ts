@@ -4,6 +4,8 @@ export interface UserSession {
   username: string;
   role: "admin" | "employee";
   name: string;
+  email?: string;
+  contactNumber?: string;
   id?: string;
 }
 

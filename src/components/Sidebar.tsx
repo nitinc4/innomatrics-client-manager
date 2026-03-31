@@ -26,7 +26,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [isAddingAdmin, setIsAddingAdmin] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [newAdmin, setNewAdmin] = useState({ name: "", username: "", password: "" });
+  const [newAdmin, setNewAdmin] = useState({ name: "", username: "", password: "", email: "" });
   const [profileData, setProfileData] = useState({ 
     name: "", 
     email: "", 
@@ -79,7 +79,7 @@ export default function Sidebar() {
     isAdmin && { name: "Statuses", href: "/statuses", icon: <Activity size={20} /> },
     isAdmin && { name: "Bulk Upload", href: "/bulk-upload", icon: <FileSpreadsheet size={20} /> },
     { name: "Discarded", href: "/discard", icon: <Trash2 size={20} /> },
-    isAdmin && { name: "Settings", href: "/settings", icon: <Settings size={20} /> },
+    isAdmin && { name: "Administrators", href: "/admins", icon: <ShieldCheck size={20} /> },
   ].filter(Boolean) as { name: string; href: string; icon: React.ReactNode }[];
 
   const handleLogout = async () => {
@@ -178,7 +178,7 @@ export default function Sidebar() {
                 });
                 if (res.ok) {
                   setIsAddingAdmin(false);
-                  setNewAdmin({ name: "", username: "", password: "" });
+                  setNewAdmin({ name: "", username: "", password: "", email: "" });
                   alert("Admin account created successfully!");
                 } else {
                   const data = await res.json();
@@ -213,6 +213,16 @@ export default function Sidebar() {
                   required 
                   value={newAdmin.password}
                   onChange={e => setNewAdmin({...newAdmin, password: e.target.value})}
+                />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Email Address</label>
+                <input 
+                  type="email" 
+                  required 
+                  value={newAdmin.email}
+                  onChange={e => setNewAdmin({...newAdmin, email: e.target.value})}
+                  placeholder="admin@example.com"
                 />
               </div>
               {error && <p className={styles.error}>{error}</p>}

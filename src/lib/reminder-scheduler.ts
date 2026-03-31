@@ -99,11 +99,6 @@ export async function checkReminders() {
     for (const client of toNotify) {
       const recipients = [...adminEmails];
       
-      // Add the global reminder email if not already present
-      if (settings.reminderEmail && !recipients.includes(settings.reminderEmail)) {
-        recipients.push(settings.reminderEmail);
-      }
-
       // Find the assigned employee
       if (client.assign && client.assign !== 'admin') {
         const assignedUser = await User.findOne({ username: client.assign });
