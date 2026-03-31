@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import styles from "./ClientModal.module.css";
-import { X, Save, Loader2, User, Phone, MapPin, Briefcase, FileText, Calendar, Users, Clock, ShieldCheck, MessageSquare, Send, CalendarDays } from "lucide-react";
+import { X, Save, Loader2, User, Phone, MapPin, Briefcase, FileText, Calendar, Users, Clock, ShieldCheck, MessageSquare, Send, CalendarDays, CheckSquare, Check, Plus, Trash2 } from "lucide-react";
 import { IClient } from "@/models/Client";
+import { ITask } from "@/models/Task";
 import React, { Fragment } from "react";
 import { useUser } from "@/hooks/useUser";
 
@@ -26,11 +27,21 @@ export default function ClientModal({ isOpen, onClose, onSave, initialData, titl
     callback: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"details" | "notes">("details");
+  const [activeTab, setActiveTab] = useState<"details" | "notes" | "tasks">("details");
   const [employees, setEmployees] = useState<UserOption[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
   const [newNote, setNewNote] = useState("");
   const [isSendingNote, setIsSendingNote] = useState(false);
+  
+  const [tasks, setTasks] = useState<ITask[]>([]);
+  const [isFetchingTasks, setIsFetchingTasks] = useState(false);
+  const [newTask, setNewTask] = useState({ 
+    task: "", 
+    date: new Date().toISOString().split('T')[0], 
+    time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) 
+  });
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  
   const { user, isAdmin } = useUser();
 
   useEffect(() => {
@@ -48,6 +59,13 @@ export default function ClientModal({ isOpen, onClose, onSave, initialData, titl
         .then(res => res.json())
         .then(data => setNotes(data))
         .catch(err => console.error("Failed to fetch notes", err));
+        
+      setIsFetchingTasks(true);
+      fetch(`/api/tasks?clientId=${initialData._id}`)
+        .then(res => res.json())
+        .then(data => setTasks(data))
+        .catch(err => console.error("Failed to fetch tasks", err))
+        .finally(() => setIsFetchingTasks(false));
     }
   }, [isOpen, initialData?._id]);
 
@@ -130,6 +148,61 @@ export default function ClientModal({ isOpen, onClose, onSave, initialData, titl
     }
   };
 
+  const handleAddTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTask.task.trim() || !initialData?._id) return;
+
+    setIsAddingTask(true);
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...newTask,
+          clientId: initialData._id,
+          status: "pending"
+        }),
+      });
+      if (res.ok) {
+        const task = await res.json();
+        setTasks([task, ...tasks]);
+        setNewTask({ ...newTask, task: "" });
+      }
+    } catch (err) {
+      console.error("Failed to add task", err);
+    } finally {
+      setIsAddingTask(false);
+    }
+  };
+
+  const handleToggleTask = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === "pending" ? "completed" : "pending";
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
+      if (res.ok) {
+        setTasks(tasks.map(t => t._id === id ? { ...t, status: newStatus } : t));
+      }
+    } catch (err) {
+      console.error("Failed to toggle task", err);
+    }
+  };
+
+  const handleDeleteTask = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this task?")) return;
+    try {
+      const res = await fetch(`/api/tasks?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setTasks(tasks.filter(t => t._id !== id));
+      }
+    } catch (err) {
+      console.error("Failed to delete task", err);
+    }
+  };
+
   const inputFields = [
     { name: "name", label: "Client Name", icon: <User size={16} />, placeholder: "Full Name", required: true },
     { name: "contactNumber", label: "Contact Number", icon: <Phone size={16} />, placeholder: "+1 234 567 890", required: true },
@@ -164,6 +237,13 @@ export default function ClientModal({ isOpen, onClose, onSave, initialData, titl
                   onClick={() => setActiveTab('notes')}
                 >
                   <MessageSquare size={16} /> Notes ({notes.length})
+                </button>
+                <button 
+                  type="button" 
+                  className={`${styles.tab} ${activeTab === 'tasks' ? styles.activeTab : ''}`}
+                  onClick={() => setActiveTab('tasks')}
+                >
+                  <CheckSquare size={16} /> Tasks ({tasks.length})
                 </button>
               </div>
             )}
@@ -267,7 +347,7 @@ export default function ClientModal({ isOpen, onClose, onSave, initialData, titl
               )}
             </div>
           </form>
-        ) : (
+        ) : activeTab === 'notes' ? (
           <div className={styles.notesContainer}>
             <div className={styles.notesTimeline}>
               {notes.length === 0 ? (
@@ -318,6 +398,86 @@ export default function ClientModal({ isOpen, onClose, onSave, initialData, titl
               <button type="submit" disabled={isSendingNote || !newNote.trim()}>
                 {isSendingNote ? <Loader2 size={18} className={styles.spinner} /> : <Send size={18} />}
               </button>
+            </form>
+          </div>
+        ) : (
+          <div className={styles.tasksContainer}>
+            <div className={styles.tasksList}>
+              {isFetchingTasks ? (
+                <div className={styles.emptyTasks}>
+                  <Loader2 size={40} className={styles.spinner} />
+                  <p>Syncing tasks...</p>
+                </div>
+              ) : tasks.length === 0 ? (
+                <div className={styles.emptyTasks}>
+                  <CheckSquare size={48} />
+                  <p>No tasks for this client yet.</p>
+                </div>
+              ) : (
+                tasks.map((task) => (
+                  <div key={task._id} className={styles.taskItem}>
+                    <div 
+                      className={`${styles.taskCheckbox} ${task.status === 'completed' ? styles.taskCheckboxChecked : ''}`}
+                      onClick={() => handleToggleTask(task._id!, task.status)}
+                    >
+                      {task.status === 'completed' && <Check size={14} />}
+                    </div>
+                    <div className={styles.taskInfo}>
+                      <span className={`${styles.taskText} ${task.status === 'completed' ? styles.taskTextCompleted : ''}`}>
+                        {task.task}
+                      </span>
+                      <div className={styles.taskMeta}>
+                        <div className={styles.taskMetaItem}>
+                          <Calendar size={12} />
+                          <span>{task.date}</span>
+                        </div>
+                        <div className={styles.taskMetaItem}>
+                          <Clock size={12} />
+                          <span>{task.time}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className={styles.taskActions}>
+                      <button 
+                        onClick={() => handleDeleteTask(task._id!)}
+                        className={styles.deleteTaskBtn}
+                        title="Delete task"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <form onSubmit={handleAddTask} className={styles.addTaskForm}>
+              <div className={styles.addTaskRow}>
+                <input 
+                  type="text" 
+                  placeholder="What needs to be done?" 
+                  required
+                  value={newTask.task}
+                  onChange={(e) => setNewTask({ ...newTask, task: e.target.value })}
+                />
+              </div>
+              <div className={styles.addTaskRow}>
+                <input 
+                  type="date" 
+                  required
+                  value={newTask.date}
+                  onChange={(e) => setNewTask({ ...newTask, date: e.target.value })}
+                />
+                <input 
+                  type="time" 
+                  required
+                  value={newTask.time}
+                  onChange={(e) => setNewTask({ ...newTask, time: e.target.value })}
+                />
+                <button type="submit" className={styles.addTaskBtn} disabled={isAddingTask || !newTask.task.trim()}>
+                  {isAddingTask ? <Loader2 size={18} className={styles.spinner} /> : <Plus size={18} />}
+                  <span>Add Task</span>
+                </button>
+              </div>
             </form>
           </div>
         )}

@@ -9,8 +9,12 @@ export async function GET(req: Request) {
 
   await connectDB();
   
+  const { searchParams } = new URL(req.url);
+  const clientId = searchParams.get("clientId");
+
   if (user.role === "admin") {
-    const tasks = await Task.find({}).sort({ createdAt: -1 }).populate('clientId', 'name');
+    const query = clientId ? { clientId } : {};
+    const tasks = await Task.find(query).sort({ createdAt: -1 }).populate('clientId', 'name');
     return NextResponse.json(tasks);
   }
 
@@ -21,12 +25,26 @@ export async function GET(req: Request) {
   const assignedClientIds = assignedClients.map(c => c._id);
 
   // 2. Show tasks created by them OR assigned to a client they manage
-  const query = {
+  let query: any = {
     $or: [
       { createdBy: user.username },
       { clientId: { $in: assignedClientIds } }
     ]
   };
+
+  if (clientId) {
+    query = {
+      $and: [
+        { clientId },
+        {
+          $or: [
+            { createdBy: user.username },
+            { clientId: { $in: assignedClientIds } }
+          ]
+        }
+      ]
+    };
+  }
 
   const tasks = await Task.find(query).sort({ createdAt: -1 }).populate('clientId', 'name');
   return NextResponse.json(tasks);
