@@ -40,6 +40,7 @@ export default function Sidebar() {
 
   const { user, isAdmin } = useUser();
   const lastPingRef = useRef<number>(0);
+  const notifiedIdsRef = useRef<Set<string>>(new Set());
 
   // Passive Polling: Ping the reminder service every 10 minutes
   // as a workaround for Vercel Hobby plan cron limits.
@@ -65,6 +66,46 @@ export default function Sidebar() {
 
     // Set up interval for subsequent pings
     const interval = setInterval(pingService, 60000); // Check every minute, but logic inside handles 10m limit
+
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Browser Notifications Logic
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const checkBrowserNotifications = async () => {
+      try {
+        const res = await fetch("/api/notifications");
+        if (res.ok) {
+          const upcoming = await res.json();
+          upcoming.forEach((client: any) => {
+            if (!notifiedIdsRef.current.has(client._id)) {
+              if (Notification.permission === 'granted') {
+                new Notification("🕒 Callback Reminder", {
+                  body: `Upcoming callback for ${client.name} at ${new Date(client.callback).toLocaleTimeString()}`,
+                });
+                notifiedIdsRef.current.add(client._id);
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Browser notification sync failed", err);
+      }
+    };
+
+    // Check every minute
+    const interval = setInterval(checkBrowserNotifications, 60000);
+    checkBrowserNotifications(); // Initial check
 
     return () => clearInterval(interval);
   }, [user]);

@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import styles from "../employees/employees.module.css";
 import { 
-  UserPlus, ShieldCheck, Trash2, Phone, Loader2, Mail, Edit2
+  UserPlus, ShieldCheck, Trash2, Phone, Loader2, Mail, Edit2,
+  Settings as SettingsIcon, Save, AlertCircle, CheckCircle2, 
+  Server, Clock, Key, MailCheck
 } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 import { useRouter } from "next/navigation";
@@ -28,16 +30,81 @@ export default function AdminsPage() {
   const [newAdmin, setNewAdmin] = useState({ name: "", username: "", password: "", contactNumber: "", email: "", role: "admin" });
   const [editForm, setEditForm] = useState({ name: "", username: "", contactNumber: "", email: "" });
   const [formError, setFormError] = useState("");
+
+  const [settings, setSettings] = useState({
+    smtpHost: "",
+    smtpPort: 465,
+    smtpUser: "",
+    smtpPass: "",
+    remindBefore: 30,
+    reminderEmail: ""
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isTestingEmail, setIsTestingEmail] = useState(false);
+  const [settingsMessage, setSettingsMessage] = useState({ type: "", text: "" });
   
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/users?role=admin");
-      if (res.ok) setAdmins(await res.json());
+      const [userRes, settingsRes] = await Promise.all([
+        fetch("/api/users?role=admin"),
+        fetch("/api/settings")
+      ]);
+      
+      if (userRes.ok) setAdmins(await userRes.json());
+      if (settingsRes.ok) {
+        const data = await settingsRes.json();
+        setSettings(data);
+      }
     } catch (err) {
       console.error("Failed to fetch data", err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    setSettingsMessage({ type: "", text: "" });
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+      if (res.ok) {
+        setSettingsMessage({ type: "success", text: "Settings saved successfully!" });
+      } else {
+        setSettingsMessage({ type: "error", text: "Failed to save settings." });
+      }
+    } catch (err) {
+      setSettingsMessage({ type: "error", text: "An error occurred." });
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    setIsTestingEmail(true);
+    setSettingsMessage({ type: "info", text: "Sending test email..." });
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // Action: "request" sends an email to the provided address
+        body: JSON.stringify({ action: "request", email: admins[0]?.email || settings.reminderEmail }),
+      });
+      if (res.ok) {
+        setSettingsMessage({ type: "success", text: "Test email sent! Check your inbox or spam." });
+      } else {
+        const data = await res.json();
+        setSettingsMessage({ type: "error", text: data.error || "Test failed." });
+      }
+    } catch (err) {
+      setSettingsMessage({ type: "error", text: "Connection error." });
+    } finally {
+      setIsTestingEmail(false);
     }
   };
 
@@ -116,6 +183,70 @@ export default function AdminsPage() {
 
   return (
     <div className={styles.container}>
+      <section className={styles.settingsSection}>
+        <div className={styles.sectionHeader}>
+          <SettingsIcon size={24} color="#4f46e5" />
+          <h2>System Configuration</h2>
+        </div>
+        
+        <form onSubmit={handleSaveSettings}>
+          <div className={styles.settingsGrid}>
+            <div className={styles.inputGroup}>
+              <label><Server size={14} style={{marginRight: '6px'}}/> SMTP Host</label>
+              <input 
+                type="text" 
+                value={settings.smtpHost} 
+                onChange={e => setSettings({...settings, smtpHost: e.target.value})} 
+                placeholder="smtp.gmail.com"
+              />
+            </div>
+            <div className={styles.inputGroup}>
+              <label><Key size={14} style={{marginRight: '6px'}}/> SMTP User</label>
+              <input 
+                type="text" 
+                value={settings.smtpUser} 
+                onChange={e => setSettings({...settings, smtpUser: e.target.value})} 
+                placeholder="user@example.com"
+              />
+            </div>
+            <div className={styles.inputGroup}>
+              <label><Key size={14} style={{marginRight: '6px'}}/> SMTP Password</label>
+              <input 
+                type="password" 
+                value={settings.smtpPass} 
+                onChange={e => setSettings({...settings, smtpPass: e.target.value})} 
+                placeholder="••••••••"
+              />
+            </div>
+            <div className={styles.inputGroup}>
+              <label><Clock size={14} style={{marginRight: '6px'}}/> Remind Before (min)</label>
+              <input 
+                type="number" 
+                value={settings.remindBefore} 
+                onChange={e => setSettings({...settings, remindBefore: parseInt(e.target.value)})} 
+              />
+            </div>
+          </div>
+
+          <div className={styles.settingsFooter}>
+            {settingsMessage.text && (
+              <div className={`${styles.statusMessage} ${styles['status_' + settingsMessage.type]}`}>
+                {settingsMessage.type === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                {settingsMessage.text}
+              </div>
+            )}
+            <button type="button" onClick={handleTestEmail} className={styles.testEmailBtn} disabled={isTestingEmail}>
+              {isTestingEmail ? <Loader2 size={18} className={styles.spinner} /> : <MailCheck size={18} />}
+              Test Email
+            </button>
+            <button type="submit" className={styles.saveSettingsBtn} disabled={isSavingSettings}>
+              {isSavingSettings ? <Loader2 size={18} className={styles.spinner} /> : <Save size={18} />}
+              Save Config
+            </button>
+          </div>
+        </form>
+      </section>
+
       <header className={styles.header}>
         <div className={styles.titleInfo}>
           <h1 className={styles.title}>Administrators</h1>

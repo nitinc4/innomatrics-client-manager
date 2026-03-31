@@ -107,6 +107,13 @@ export async function checkReminders() {
         }
       }
 
+      console.log(`[Reminder Service] Attempting delivery for ${client.name} to: ${recipients.join(', ') || 'NO RECIPIENTS FOUND'}`);
+      
+      if (recipients.length === 0) {
+        console.warn(`[Reminder Service] Skipping ${client.name} - No email addresses found for admins or assigned user.`);
+        continue;
+      }
+
       const success = await sendEmailToRecipients(settings, client, recipients);
       if (success) {
         client.reminderSent = true;
