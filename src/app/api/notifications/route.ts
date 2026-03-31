@@ -32,9 +32,18 @@ export async function GET(request: NextRequest) {
 
     // Filter to upcoming only
     const upcoming = callbacks.filter((client: any) => {
-      const callbackDate = new Date(client.callback);
+      // Handle datetime-local strings by assuming IST (+05:30) if no timezone is present
+      const callbackStr = client.callback.includes('Z') || client.callback.includes('+') 
+        ? client.callback 
+        : `${client.callback}+05:30`;
+        
+      const callbackDate = new Date(callbackStr);
       if (isNaN(callbackDate.getTime())) return false;
-      return callbackDate >= now && callbackDate <= leadTimeDate;
+
+      // Show alerts from 15 minutes ago up to leadTimeDate 
+      // This ensures if a user logs in exactly at the time or slightly after, they still see it.
+      const startTime = new Date(now.getTime() - 15 * 60000); 
+      return callbackDate >= startTime && callbackDate <= leadTimeDate;
     });
 
     return NextResponse.json(upcoming);

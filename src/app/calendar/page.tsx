@@ -21,6 +21,7 @@ export default function CallbackCalendar() {
   const [clients, setClients] = useState<IClient[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [isLoading, setIsLoading] = useState(true);
+  const [statuses, setStatuses] = useState<any[]>([]);
 
   const fetchCallbacks = async () => {
     setIsLoading(true);
@@ -28,13 +29,24 @@ export default function CallbackCalendar() {
       const response = await fetch("/api/clients?discarded=false");
       if (response.ok) {
         const data = await response.json();
-        // Filtering in-memory for simplicity or rely on server-side if exists
         setClients(data);
       }
     } catch (error) {
       console.error("Failed to fetch callbacks:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchStatuses = async () => {
+    try {
+      const response = await fetch("/api/statuses");
+      if (response.ok) {
+        const data = await response.json();
+        setStatuses(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch statuses:", error);
     }
   };
 
@@ -56,6 +68,7 @@ export default function CallbackCalendar() {
 
   useEffect(() => {
     fetchCallbacks();
+    fetchStatuses();
   }, []);
 
   const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -181,7 +194,7 @@ export default function CallbackCalendar() {
                         value={client.status}
                         onChange={(e) => handleUpdateStatus(client._id!, e.target.value)}
                       >
-                        {["Active", "RNA", "Callback", "Converted", "Lost", "Archived", "Completed"].map(status => (
+                        {(statuses.length > 0 ? statuses.map(s => s.name) : ["Active", "RNA", "Callback", "Converted", "Lost", "Archived", "Completed"]).map(status => (
                           <option key={status} value={status}>{status}</option>
                         ))}
                       </select>

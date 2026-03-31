@@ -87,9 +87,18 @@ export async function checkReminders() {
     });
 
     const toNotify = upcomingCallbacks.filter(client => {
-      const callbackDate = new Date(client.callback);
+      // Handle datetime-local strings by assuming IST (+05:30) if no timezone is present
+      const callbackStr = client.callback.includes('Z') || client.callback.includes('+') 
+        ? client.callback 
+        : `${client.callback}+05:30`;
+        
+      const callbackDate = new Date(callbackStr);
       if (isNaN(callbackDate.getTime())) return false;
-      return callbackDate >= now && callbackDate <= leadTimeDate;
+
+      // Include anything from 30 mins ago up to leadTimeDate 
+      // catching recently passed ones that haven't been sent yet
+      const startTime = new Date(now.getTime() - 30 * 60000); 
+      return callbackDate >= startTime && callbackDate <= leadTimeDate;
     });
 
     if (toNotify.length === 0) return;
