@@ -31,6 +31,12 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
+    // If callback is being updated, reset reminderSent flag to false
+    // so the scheduler picks up the new time.
+    if (body.callback) {
+      body.reminderSent = false;
+    }
+
     const client = await Client.findByIdAndUpdate(id, body, { new: true });
 
     if (!client) {

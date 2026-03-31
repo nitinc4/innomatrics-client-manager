@@ -54,11 +54,9 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks();
-    if (isAdmin) {
-      fetchClients();
-      fetchEmployees();
-    }
-  }, [isAdmin]);
+    fetchClients();
+    fetchEmployees();
+  }, []);
 
   const fetchTasks = async () => {
     try {
@@ -168,12 +166,10 @@ export default function TasksPage() {
           <h1 className={styles.title}>Task Monitoring</h1>
           <p className={styles.subtitle}>Manage and track organizational tasks and client follow-ups.</p>
         </div>
-        {isAdmin && (
-          <button onClick={() => setIsModalOpen(true)} className={styles.addBtn}>
-            <Plus size={20} />
-            <span>Create New Task</span>
-          </button>
-        )}
+        <button onClick={() => setIsModalOpen(true)} className={styles.addBtn}>
+          <Plus size={20} />
+          <span>Create New Task</span>
+        </button>
       </header>
 
       <div className={styles.controls}>

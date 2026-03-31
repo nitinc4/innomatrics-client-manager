@@ -86,6 +86,9 @@ export async function checkReminders() {
       callback: { $exists: true, $ne: "" }
     });
 
+    console.log(`[Reminder Service] Raw pending callbacks from DB: ${upcomingCallbacks.length}`);
+    console.log(`[Reminder Service] Active Admin Emails: ${adminEmails.join(', ') || 'NONE'}`);
+
     const toNotify = upcomingCallbacks.filter(client => {
       // Handle datetime-local strings by assuming IST (+05:30) if no timezone is present
       const callbackStr = client.callback.includes('Z') || client.callback.includes('+') 
@@ -98,10 +101,20 @@ export async function checkReminders() {
       // Include anything from 30 mins ago up to leadTimeDate 
       // catching recently passed ones that haven't been sent yet
       const startTime = new Date(now.getTime() - 30 * 60000); 
-      return callbackDate >= startTime && callbackDate <= leadTimeDate;
+      const isDue = callbackDate >= startTime && callbackDate <= leadTimeDate;
+      
+      if (isDue) {
+        console.log(`[Reminder Service] MATCH: ${client.name} | Callback: ${callbackDate.toISOString()} | Server now: ${now.toISOString()}`);
+      }
+      return isDue;
     });
 
-    if (toNotify.length === 0) return;
+    if (toNotify.length === 0) {
+      if (upcomingCallbacks.length > 0) {
+        console.log(`[Reminder Service] All ${upcomingCallbacks.length} raw callbacks were outside the active window (${leadTimeMinutes} mins ahead, 30 mins behind).`);
+      }
+      return;
+    }
 
     console.log(`[Reminder Service] Processing ${toNotify.length} priority notifications.`);
 

@@ -40,9 +40,9 @@ export async function GET(request: NextRequest) {
       const callbackDate = new Date(callbackStr);
       if (isNaN(callbackDate.getTime())) return false;
 
-      // Show alerts from 15 minutes ago up to leadTimeDate 
+      // Show alerts from 30 minutes ago up to leadTimeDate 
       // This ensures if a user logs in exactly at the time or slightly after, they still see it.
-      const startTime = new Date(now.getTime() - 15 * 60000); 
+      const startTime = new Date(now.getTime() - 30 * 60000); 
       return callbackDate >= startTime && callbackDate <= leadTimeDate;
     });
 

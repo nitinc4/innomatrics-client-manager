@@ -7,7 +7,7 @@ import { getSession } from "@/lib/auth";
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
-    if (!session || session.role !== "admin") {
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -16,7 +16,22 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get("role") || "employee";
     const users = await User.find({ role }).lean().sort({ createdAt: -1 });
     
-    // Fetch stats for each employee
+    // If user is an employee, only return a light version (names and usernames)
+    if (session.role === "employee") {
+      const lightUsers = users.map((u: any) => ({
+        username: u.username,
+        name: u.name,
+        role: u.role
+      }));
+      return NextResponse.json(lightUsers);
+    }
+
+    // Role check for admins to see stats
+    if (session.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Fetch stats for each employee (Admin Only)
     const usersWithStats = await Promise.all(users.map(async (u: any) => {
       const stats = await Client.aggregate([
         { $match: { assign: u.username } },
